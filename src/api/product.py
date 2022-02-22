@@ -1,4 +1,5 @@
-from flask import Blueprint, jsonify, request
+from distutils.log import error
+from flask import Blueprint, jsonify, request, json, Response
 from .. import models
 
 
@@ -10,7 +11,7 @@ bp = Blueprint('product', __name__)
 def get_products():
     all_products = models.Product.query.all()
     result = models.products_schema.dump(all_products)
-    return jsonify(result)
+    return jsonify(result), 200
 
     
 
@@ -18,9 +19,7 @@ def get_products():
 @bp.route('/product/<int:id>', methods=['GET'])
 def get_product(id):
     product = models.Product.query.get(id)
-    return models.product_schema.jsonify(product)
-
-
+    return models.product_schema.jsonify(product), 200
 
 # Create a Product 
 @bp.route('/product', methods=['POST'])
@@ -29,31 +28,19 @@ def add_product():
     description = request.json['description']
     price = request.json['price']
     qty = request.json['qty']
-
     new_product = models.Product(name, description, price, qty)
     new_product.save()
+    return 'OK', 200
 
 
-    return models.product_schema.jsonify(new_product)
-
-# Update a Product 
+# Update Product
 @bp.route('/product/<int:id>', methods=['PUT'])
 def update_product(id):
+    request_data = request.get_json()
     product = models.Product.query.get(id)
+    product.update(request_data)
+    return models.product_schema.jsonify(product), 200
 
-    name = request.json['name']
-    description = request.json['description']
-    price = request.json['price']
-    qty = request.json['qty']
-
-    product.name = name
-    product.description = description
-    product.price = price
-    product.qty = qty
-
-    models.db.session.commit()
-    
-    return models.product_schema.jsonify(product)
 
 
 # Delete products
@@ -61,6 +48,15 @@ def update_product(id):
 def delete_product(id):
     product = models.Product.query.get(id)
     product.delete()
-    return models.product_schema.jsonify(product)
+    return models.product_schema.jsonify(product), 200
 
 
+# def custom_response(res, status_code):
+#   """
+#   Custom Response Function
+#   """
+#   return Response(
+#     mimetype="application/json",
+#     response=json.dumps(res),
+#     status=status_code
+#   )
